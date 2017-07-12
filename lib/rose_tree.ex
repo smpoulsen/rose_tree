@@ -10,6 +10,8 @@ defmodule RoseTree do
   defstruct node: :empty, children: []
 
   @type t :: %RoseTree{node: any(), children: [%RoseTree{}]}
+  @type breadcrumb :: %{node: any(), index: integer(), other_children: [any()]}
+  @type zipper :: {RoseTree.t, [breadcrumb]}
 
   @doc """
   Initialize a new rose tree with a node value and empty children.
@@ -29,7 +31,10 @@ defmodule RoseTree do
       ...>      {:ok, c} <- RoseTree.new(:c) do
       ...>   RoseTree.new(:a, [b, c])
       ...> end
-      {:ok, %RoseTree{node: :a, children: [%RoseTree{node: :b, children: []}, %RoseTree{node: :c, children: []}]}}
+      {:ok, %RoseTree{node: :a, children: [
+        %RoseTree{node: :b, children: []},
+        %RoseTree{node: :c, children: []}
+      ]}}
   """
   @spec new(any(), any()) :: {:ok, RoseTree.t} | {:error, tuple()}
   def new(value, children) when is_list(children) do
@@ -59,7 +64,9 @@ defmodule RoseTree do
       iex> {:ok, hello} = RoseTree.new(:hello)
       ...> {:ok, world} = RoseTree.new(:world)
       ...> RoseTree.add_child(hello, world)
-      %RoseTree{node: :hello, children: [%RoseTree{node: :world, children: []}]}
+      %RoseTree{node: :hello, children: [
+        %RoseTree{node: :world, children: []}
+      ]}
 
       iex> {:ok, hello} = RoseTree.new(:hello)
       ...> {:ok, world_wide} = RoseTree.new(:world, :wide)
@@ -118,6 +125,8 @@ defmodule RoseTree do
   @doc """
   Remove the first child from the children of a node.
 
+  Returns a tuple containing the child that was removed and the modified tree.
+
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
       ...>      {:ok, d} <- RoseTree.new(:d),
@@ -146,6 +155,34 @@ defmodule RoseTree do
   end
 
   @doc """
+  Remove the child at a given index from the children of a node.
+
+  Returns a tuple containing the child that was removed and the modified tree.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
+      ...>      {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> RoseTree.pop_child_at(tree, 1)
+      {%RoseTree{node: :c, children: [
+        %RoseTree{node: :d, children: []},
+        %RoseTree{node: :z, children: []}]},
+        %RoseTree{node: :a, children: [
+          %RoseTree{node: :b, children: []},
+        ]}
+      }
+  """
+  @spec pop_child_at(RoseTree.t, integer()) :: {RoseTree.t, RoseTree.t} | {nil, RoseTree.t}
+  def pop_child_at(%RoseTree{children: []} = tree, _idx), do: {nil, tree}
+  def pop_child_at(%RoseTree{node: node, children: children} = tree, idx) do
+    {child, updated_children} = List.pop_at(children, idx)
+    {child, update_children(tree, node, updated_children)}
+  end
+
+  @doc """
   Convert a map into a rose tree.
 
   ## Examples
@@ -153,7 +190,11 @@ defmodule RoseTree do
       {:ok, %RoseTree{node: :a, children: [%RoseTree{node: :b, children: []}]}}
 
       iex> RoseTree.from_map(%{a: %{b: [:c]}})
-      {:ok, %RoseTree{node: :a, children: [%RoseTree{node: :b, children: [%RoseTree{node: :c, children: []}]}]}}
+      {:ok, %RoseTree{node: :a, children: [
+        %RoseTree{node: :b, children: [
+          %RoseTree{node: :c, children: []}
+        ]}
+      ]}}
   """
   @spec from_map(map()) :: {:error, tuple()} | {:ok, RoseTree.t}
   def from_map(%{} = map) do
@@ -209,14 +250,14 @@ defmodule RoseTree do
   TODO optimize to use lazy lists
 
   ## Examples
-  iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
-  ...>      {:ok, d} <- RoseTree.new(:d),
-  ...>      {:ok, z} <- RoseTree.new(:z),
-  ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
-  ...>   RoseTree.new(:a, [b, c])
-  ...> end
-  ...> RoseTree.to_list(tree)
-  [:a, :b, :c, :d, :z]
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
+      ...>      {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> RoseTree.to_list(tree)
+      [:a, :b, :c, :d, :z]
   """
   @spec to_list(RoseTree.t) :: [any()]
   def to_list(%RoseTree{} = tree), do: to_list(tree, [])
@@ -254,6 +295,63 @@ defmodule RoseTree do
   end
   def elem_at(_, _), do: {:error, {:rose_tree, :bad_path}}
 
+  # Zipper stuff.
+  @doc """
+  Descend into a node in such a way that you can reconstruct the tree from the bottom up.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
+      ...>      {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> RoseTree.descend({tree, []}, 0)
+      {%RoseTree{node: :b, children: []}, [%{
+        node: :a,
+        index: 0,
+        other_children: [
+          %RoseTree{node: :c, children: [
+            %RoseTree{node: :d, children: []},
+            %RoseTree{node: :z, children: []}
+          ]}
+        ]
+      }]}
+  """
+  @spec descend(zipper, integer()) :: zipper
+  def descend({%RoseTree{} = tree, breadcrumbs}, index) when is_list(breadcrumbs) do
+    with {elem, %RoseTree{node: node, children: updated_children}} <- pop_child_at(tree, index) do
+      new_breadcrumb = %{node: node, index: index, other_children: updated_children}
+      {elem, [new_breadcrumb | breadcrumbs]}
+    end
+  end
+
+  @doc """
+  Reconstruct a node from the bottom up.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
+      ...>      {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> descended = RoseTree.descend({tree, []}, 0)
+      ...> RoseTree.ascend(descended)
+      {%RoseTree{node: :a, children: [
+        %RoseTree{node: :b, children: []},
+        %RoseTree{node: :c, children: [
+          %RoseTree{node: :d, children: []},
+          %RoseTree{node: :z, children: []}
+        ]}
+      ]}, []}
+  """
+  @spec ascend(zipper) :: zipper
+  def ascend({%RoseTree{} = tree, [%{index: idx, node: value, other_children: others} | crumbs]}) do
+    siblings = List.insert_at(others, idx, tree)
+    {%RoseTree{node: value, children: siblings}, crumbs}
+  end
+
   @doc """
   Replace the value of any node that matches a given value.
 
@@ -275,7 +373,7 @@ defmodule RoseTree do
   end
 
   @doc """
-  Replace the children of a given node.
+  Replace the children of a node that matches a given value.
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b) do
