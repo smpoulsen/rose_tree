@@ -220,13 +220,39 @@ defmodule RoseTree do
   """
   @spec to_list(RoseTree.t) :: [any()]
   def to_list(%RoseTree{} = tree), do: to_list(tree, [])
-  def to_list(%RoseTree{node: node, children: []}, _acc), do: [node]
-  def to_list(%RoseTree{node: node, children: children}, acc) do
+  defp to_list(%RoseTree{node: node, children: []}, _acc), do: [node]
+  defp to_list(%RoseTree{node: node, children: children}, acc) do
     reduced_children = for child <- children do
       to_list(child, acc)
     end
     List.flatten([node | reduced_children])
   end
+
+  @doc """
+  Fetch a node's value by traversing a path of indicies through nodes and their children.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
+      ...>      {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> RoseTree.elem_at(tree, [])
+      {:ok, :a}
+      ...> RoseTree.elem_at(tree, [1, 0])
+      {:ok, :d}
+      ...> RoseTree.elem_at(tree, [1, 2])
+      {:error, {:rose_tree, :bad_path}}
+  """
+  @spec elem_at(RoseTree.t, list(integer())) :: {:ok, any()} | {:error, tuple()}
+  def elem_at(%RoseTree{node: node}, []), do: {:ok, node}
+  def elem_at(%RoseTree{children: children}, [h | t]) when h <= length(children) do
+    children
+    |> Enum.at(h)
+    |> elem_at(t)
+  end
+  def elem_at(_, _), do: {:error, {:rose_tree, :bad_path}}
 
   @doc """
   Replace the value of any node that matches a given value.
