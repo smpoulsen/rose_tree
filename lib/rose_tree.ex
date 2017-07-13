@@ -236,15 +236,8 @@ defmodule RoseTree do
     for child <- children, do: paths(child, [node | acc])
   end
 
-  @spec lazy_paths(RoseTree.t):: any()
-  def lazy_paths(%RoseTree{} = tree) do
-    # TODO Implement
-  end
-
   @doc """
   Extract the node values of a rose tree into a list.
-
-  TODO optimize to use lazy lists
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
@@ -432,11 +425,15 @@ defmodule RoseTree do
   """
   @spec to_root(zipper) :: RoseTree.t
   def to_root({tree, []}), do: tree
-  def to_root({tree, crumbs} = zipper), do: to_root(ascend(zipper))
+  def to_root({_tree, _crumbs} = zipper), do: to_root(ascend(zipper))
 
 
   @doc """
-  Replace the value of any node that matches a given value.
+  Replace the value of every node that matches a given value.
+
+  Note: this will update the value of *every* match. If there
+  are multiple nodes throughout the tree that match, they will
+  all be updated.
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b) do
@@ -457,6 +454,10 @@ defmodule RoseTree do
 
   @doc """
   Replace the children of a node that matches a given value.
+
+  Note: this will update the value of *every* match. If there
+  are multiple nodes throughout the tree that match, they will
+  all be updated.
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b) do
