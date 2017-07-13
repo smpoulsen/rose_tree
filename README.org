@@ -1,19 +1,39 @@
-# RoseTree
+* RoseTree
+[[https://circleci.com/gh/tpoulsen/rose_tree][https://circleci.com/gh/tpoulsen/rose_tree.svg?style=svg]]
+[[https://img.shields.io/hexpm/v/rose_tree.svg]]
 
-**TODO: Add description**
+/An n-ary tree by any other name.../
 
-## Installation
+A [[https://en.wikipedia.org/wiki/Rose_tree][rose tree]] is an n-ary tree in which each node has zero or more children, all
+of which are themselves rose trees.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `rose_tree` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [{:rose_tree, "~> 0.1.0"}]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/rose_tree](https://hexdocs.pm/rose_tree).
+** Functions 
+*** Tree creation
++ =new/1=
++ =new/2=
++ =from_map/1=
+*** Node insertion/removal/validation 
++ =add_child/2= 
++ =pop_child/1=
++ =pop_child_at/2=
++ =is_child?/2=
++ =elem_at/2=
++ =update_node/3=
++ =update_children/3=
+*** Traversal 
++ =paths/1=
++ =to_list/1=
+*** Zipper traveral/manipulation
++ =descend/2=
++ =ascend/1=
++ =modify/2=
++ =prune/1=
++ =to_root/1=
+** Installation
+  Add =rose_tree= to your list of dependencies in =mix.exs=:
+    #+BEGIN_SRC elixir
+      def deps do
+        [{:rose_tree, "~> 0.1.0"}]
+      end
+    #+END_SRC
 
