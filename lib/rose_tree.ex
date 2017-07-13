@@ -79,21 +79,101 @@ defmodule RoseTree do
       %RoseTree{children: [
         %RoseTree{children: [], node: :dave},
         %RoseTree{children: [
-          %RoseTree{node: :champ, children: []},
-          %RoseTree{node: :wide, children: []}],
-          node: :world}
-      ], node: :hello}
+          %RoseTree{node: :wide, children: []},
+          %RoseTree{node: :champ, children: []}],
+          node: :world}],
+        node: :hello}
   """
   @spec add_child(RoseTree.t, RoseTree.t) :: RoseTree.t
   def add_child(%RoseTree{} = tree, {:ok, child}), do: add_child(tree, child)
   def add_child(%RoseTree{node: n, children: children} = tree, child) do
     if is_child?(tree, child) do
-      matching_node = Enum.find(children, fn(c) -> c.node == child.node end)
-      merged_children = Enum.map(child.children, &add_child(matching_node, &1))
-      update_children(tree, n, merged_children)
+      {matching_node, node_index} = children
+      |> Enum.with_index()
+      |> Enum.find(fn({c, _i}) -> c.node == child.node end)
+      merged_children = merge_nodes(matching_node, child)
+      updated_children = List.replace_at(children, node_index, merged_children)
+      %RoseTree{node: n, children: updated_children}
     else
       %RoseTree{node: n, children: [child | children]}
     end
+  end
+
+  @doc """
+  Retrieve a list of the values of a node's immediate children.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
+      ...>      {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> RoseTree.child_values(tree)
+      [:b, :c]
+
+      iex> {:ok, tree} = RoseTree.new(:hello)
+      ...> RoseTree.child_values(tree)
+      []
+  """
+  @spec child_values(RoseTree.t) :: [any()]
+  def child_values(%RoseTree{children: children}) do
+    children
+    |> Enum.map(&(&1.node))
+  end
+
+  @doc """
+  Merge two nodes that have the same value.
+
+  If the sets of children in the two nodes do not share any members, the
+  children of tree a are prepended to tree b's children.
+
+  If there are children with the same node value present in both trees,
+  the children are themselves merged with the child in tree a's children updated
+  with the children of tree b's child that matched prepended to the unique children
+  from tree b.
+
+  ## Examples
+      iex> {:ok, world_wide} = RoseTree.new(:world, :wide)
+      ...> {:ok, world_champ} = RoseTree.new(:world, :champ)
+      ...> RoseTree.merge_nodes(world_champ, world_wide)
+      %RoseTree{
+        children: [
+          %RoseTree{children: [], node: :champ},
+          %RoseTree{children: [], node: :wide}
+        ], node: :world
+      }
+  """
+  @spec merge_nodes(RoseTree.t, RoseTree.t) :: RoseTree.t
+  def merge_nodes(%RoseTree{node: node} = tree_a, %RoseTree{node: node} = tree_b) do
+    children_a_nodes = MapSet.new(child_values(tree_a))
+    children_b_nodes = MapSet.new(child_values(tree_b))
+    if MapSet.disjoint?(children_a_nodes, children_b_nodes) do
+      # If no children are shared, prepend a's children to b's children.
+      %RoseTree{node: node, children: List.flatten([tree_a.children | tree_b.children])}
+    else
+      # If children are shared, their children have to be merged.
+      matching_children = MapSet.intersection(children_a_nodes, children_b_nodes)
+      unique_children_b = MapSet.difference(children_b_nodes, children_a_nodes)
+      new_children = tree_a.children
+      |> Enum.reduce([], fn (child, acc) ->
+          if MapSet.member?(matching_children, child) do
+            match = Enum.find(tree_b.children, fn(c) -> c.node == child.node end)
+            [merge_nodes(child, match) | acc]
+          else
+            [child | acc]
+          end
+        end)
+      |> child_merge_helper(tree_b.children, unique_children_b)
+      %RoseTree{node: node, children: new_children}
+    end
+  end
+
+  defp child_merge_helper(children_a, children_b, children_b_unique_nodes) do
+    children_b
+    |> Enum.filter(fn (child) -> MapSet.member?(children_b_unique_nodes, child.node) end)
+    |> Enum.reduce(children_a, fn (child, acc) -> [child | acc] end)
+    |> Enum.reverse
   end
 
   @doc """
