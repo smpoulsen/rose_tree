@@ -89,7 +89,7 @@ defmodule RoseTree do
   def add_child(%RoseTree{node: n, children: children} = tree, child) do
     if is_child?(tree, child) do
       {matching_node, node_index} = children
-      |> Enum.with_index()
+      |> Stream.with_index()
       |> Enum.find(fn({c, _i}) -> c.node == child.node end)
       merged_children = merge_nodes(matching_node, child)
       updated_children = List.replace_at(children, node_index, merged_children)
@@ -120,6 +120,32 @@ defmodule RoseTree do
   def child_values(%RoseTree{children: children}) do
     children
     |> Enum.map(&(&1.node))
+  end
+
+  @doc """
+  Determines whether a node is a child of a tree.
+
+  The determination is based on whether the value of the node of the potential child
+  matches a node value in the tree of interest.
+
+  ## Examples
+  iex> {:ok, b} = RoseTree.new(:b)
+  ...> {:ok, tree} = with {:ok, d} <- RoseTree.new(:d),
+  ...>      {:ok, z} <- RoseTree.new(:z),
+  ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+  ...>   RoseTree.new(:a, [b, c])
+  ...> end
+  ...> RoseTree.is_child?(tree, b)
+  true
+  ...> {:ok, x} = RoseTree.new(:x)
+  ...> RoseTree.is_child?(tree, x)
+  false
+  """
+  @spec is_child?(RoseTree.t, RoseTree.t) :: boolean
+  def is_child?(%RoseTree{children: children}, %RoseTree{node: child_node}) do
+    children
+    |> Stream.map(&(&1.node))
+    |> Enum.member?(child_node)
   end
 
   @doc """
@@ -171,35 +197,9 @@ defmodule RoseTree do
 
   defp child_merge_helper(children_a, children_b, children_b_unique_nodes) do
     children_b
-    |> Enum.filter(fn (child) -> MapSet.member?(children_b_unique_nodes, child.node) end)
+    |> Stream.filter(fn (child) -> MapSet.member?(children_b_unique_nodes, child.node) end)
     |> Enum.reduce(children_a, fn (child, acc) -> [child | acc] end)
     |> Enum.reverse
-  end
-
-  @doc """
-  Determines whether a node is a child of a tree.
-
-  The determination is based on whether the value of the node of the potential child
-  matches a node value in the tree of interest.
-
-  ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, tree} = with {:ok, d} <- RoseTree.new(:d),
-      ...>      {:ok, z} <- RoseTree.new(:z),
-      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
-      ...>   RoseTree.new(:a, [b, c])
-      ...> end
-      ...> RoseTree.is_child?(tree, b)
-      true
-      ...> {:ok, x} = RoseTree.new(:x)
-      ...> RoseTree.is_child?(tree, x)
-      false
-  """
-  @spec is_child?(RoseTree.t, RoseTree.t) :: boolean
-  def is_child?(%RoseTree{children: children}, %RoseTree{node: child_node}) do
-    children
-    |> Enum.map(&(&1.node))
-    |> Enum.member?(child_node)
   end
 
   @doc """
