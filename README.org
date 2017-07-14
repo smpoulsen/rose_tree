@@ -7,32 +7,37 @@
 A [[https://en.wikipedia.org/wiki/Rose_tree][rose tree]] is an n-ary tree in which each node has zero or more children, all
 of which are themselves rose trees.
 
-** Functions 
+Ex:
+[[img/rose_tree_diagram.png]]
+
+** Functions
 *** Tree creation
 + =new/1=
 + =new/2=
 + =from_map/1=
-*** Node insertion/removal/validation 
-+ =add_child/2= 
-+ =pop_child/1=
-+ =pop_child_at/2=
+*** Node insertion/removal/validation
++ =add_child/2=
 + =is_child?/2=
 + =elem_at/2=
++ =child_values/1=
+*** Node manipulation
++ =map/2=
++ =pop_child/1=
++ =pop_child_at/2=
++ =merge_nodes/2=
 + =update_node/3=
 + =update_children/3=
-+ =child_values/1=
-+ =merge_nodes/2=
-*** Traversal 
+*** Traversal
 + =paths/1=
 + =to_list/1=
-*** Zipper traveral/manipulation
+*** Zipper traversal/manipulation
 + =descend/2=
 + =ascend/1=
 + =modify/2=
 + =prune/1=
 + =to_root/1=
 ** Protocols
-=RoseTree= implements the =Enumerable= protocol, so all =Enum= functions are usable with a =RoseTree=. 
+=RoseTree= implements the =Enumerable= protocol, so all =Enum= functions are usable with a =RoseTree=.
 ** Installation
   Add =rose_tree= to your list of dependencies in =mix.exs=:
     #+BEGIN_SRC elixir
@@ -40,4 +45,3 @@ of which are themselves rose trees.
         [{:rose_tree, "~> 0.1.0"}]
       end
     #+END_SRC
-
