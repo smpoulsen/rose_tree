@@ -27,6 +27,8 @@ defmodule RoseTree.Mixfile do
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:credo, "~> 0.8.2", only: [:dev, :test]},
       {:dialyxir, "~> 0.5.0", only: [:dev, :test]},
+      {:excheck, "~> 0.5.3", only: :test},
+      {:triq, github: "triqng/triq", only: :test},
     ]
   end
 

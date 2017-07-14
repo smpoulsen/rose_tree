@@ -20,6 +20,8 @@ of which are themselves rose trees.
 + =elem_at/2=
 + =update_node/3=
 + =update_children/3=
++ =child_values/1=
++ =merge_nodes/2=
 *** Traversal 
 + =paths/1=
 + =to_list/1=
@@ -29,6 +31,8 @@ of which are themselves rose trees.
 + =modify/2=
 + =prune/1=
 + =to_root/1=
+** Protocols
+=RoseTree= implements the =Enumerable= protocol, so all =Enum= functions are usable with a =RoseTree=. 
 ** Installation
   Add =rose_tree= to your list of dependencies in =mix.exs=:
     #+BEGIN_SRC elixir
