@@ -1,38 +1,7 @@
 defmodule RoseTreeTest do
   use ExUnit.Case
-  use ExCheck
+  use Generators
   doctest RoseTree
-
-  @node_values [:a, :b, :c, 0, 1, 2, 3, "hello", "world"]
-
-  # Generator for RoseTrees
-  def rose_tree(n) do
-    domain(:rose_tree,
-      fn(self, size) ->
-        {_, node} = :triq_dom.pick(elements(@node_values), size)
-        {_, child_count} = :triq_dom.pick(elements([0,1, 2]), size)
-        children = if child_count > 0 do
-          gen_child_trees(size, n)
-        else
-          []
-        end
-        tree = %RoseTree{node: node, children: children}
-        {self, tree}
-      end, fn
-        (self, %RoseTree{node: node, children: children}) ->
-          new_node = shrink(elements(@node_values), node)
-          new_children = if length(children) == 0, do: [], else: [hd(children)]
-          tree = %RoseTree{node: new_node, children: new_children}
-          {self, tree}
-      end)
-  end
-
-  defp gen_child_trees(size, count) do
-    for n <- Range.new(0, count) do
-      {_, child} = :triq_dom.pick(rose_tree(n), size)
-      child
-    end
-  end
 
   property "add_child/2 adds a child to a tree" do
     for_all {t1, t2} in {rose_tree(0), rose_tree(1)} do
