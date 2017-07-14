@@ -129,23 +129,52 @@ defmodule RoseTree do
   matches a node value in the tree of interest.
 
   ## Examples
-  iex> {:ok, b} = RoseTree.new(:b)
-  ...> {:ok, tree} = with {:ok, d} <- RoseTree.new(:d),
-  ...>      {:ok, z} <- RoseTree.new(:z),
-  ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
-  ...>   RoseTree.new(:a, [b, c])
-  ...> end
-  ...> RoseTree.is_child?(tree, b)
-  true
-  ...> {:ok, x} = RoseTree.new(:x)
-  ...> RoseTree.is_child?(tree, x)
-  false
+      iex> {:ok, b} = RoseTree.new(:b)
+      ...> {:ok, tree} = with {:ok, d} <- RoseTree.new(:d),
+      ...>      {:ok, z} <- RoseTree.new(:z),
+      ...>      {:ok, c} <- RoseTree.new(:c, [d, z]) do
+      ...>   RoseTree.new(:a, [b, c])
+      ...> end
+      ...> RoseTree.is_child?(tree, b)
+      true
+      ...> {:ok, x} = RoseTree.new(:x)
+      ...> RoseTree.is_child?(tree, x)
+      false
   """
   @spec is_child?(RoseTree.t, RoseTree.t) :: boolean
   def is_child?(%RoseTree{children: children}, %RoseTree{node: child_node}) do
     children
     |> Stream.map(&(&1.node))
     |> Enum.member?(child_node)
+  end
+
+  @doc """
+  Map a function over a tree, preserving the trees structure (compare
+  with Enum.map for rose trees, which maps over a list of node values).
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(1),
+      ...>      {:ok, d} <- RoseTree.new(11),
+      ...>      {:ok, z} <- RoseTree.new(12),
+      ...>      {:ok, c} <- RoseTree.new(10, [d, z]) do
+      ...>   RoseTree.new(0, [b, c])
+      ...> end
+      ...> RoseTree.map(tree, fn (value) -> value * value end)
+      %RoseTree{node: 0, children: [
+        %RoseTree{node: 1, children: []},
+        %RoseTree{node: 100, children: [
+          %RoseTree{node: 121, children: []},
+          %RoseTree{node: 144, children: []}
+        ]}
+      ]}
+  """
+  @spec map(RoseTree.t, (any() -> any())) :: RoseTree.t
+  def map(%RoseTree{node: node, children: []}, func) do
+    %RoseTree{node: func.(node), children: []}
+  end
+  def map(%RoseTree{node: node, children: children}, func) do
+    updated_children = for child <- children, do: map(child, func)
+    %RoseTree{node: func.(node), children: updated_children}
   end
 
   @doc """
