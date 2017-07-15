@@ -102,19 +102,21 @@ defmodule RoseTree.Zipper do
       ...> end
       ...> {:ok, descended} = Zipper.descend({tree, []}, 0)
       ...> Zipper.ascend(descended)
-      {%RoseTree{node: :a, children: [
-        %RoseTree{node: :b, children: []},
-        %RoseTree{node: :c, children: [
-          %RoseTree{node: :d, children: []},
-          %RoseTree{node: :z, children: []}
-        ]}
-      ]}, []}
+      {:ok,
+        {%RoseTree{node: :a, children: [
+          %RoseTree{node: :b, children: []},
+          %RoseTree{node: :c, children: [
+            %RoseTree{node: :d, children: []},
+            %RoseTree{node: :z, children: []}
+          ]}
+        ]}, []}
+      }
   """
-  @spec ascend(Zipper.t) :: Zipper.t
-  def ascend({%RoseTree{} = tree, []}), do: {tree, []}
+  @spec ascend(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_parent}}
+  def ascend({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_parent}}
   def ascend({%RoseTree{} = tree, [%{index: idx, node: value, other_children: others} | crumbs]}) do
     siblings = List.insert_at(others, idx, tree)
-    {%RoseTree{node: value, children: siblings}, crumbs}
+    {:ok, {%RoseTree{node: value, children: siblings}, crumbs}}
   end
 
   @doc """
@@ -197,7 +199,7 @@ defmodule RoseTree.Zipper do
   """
   @spec to_root(Zipper.t) :: RoseTree.t
   def to_root({tree, []}), do: tree
-  def to_root({_tree, _crumbs} = zipper), do: to_root(ascend(zipper))
+  def to_root({_tree, _crumbs} = zipper), do: lift(ascend(zipper), &to_root/1)
 
 
   @doc """
@@ -301,7 +303,7 @@ defmodule RoseTree.Zipper do
     else
       zipper
       |> ascend()
-      |> descend(index + 1)
+      |> lift(&descend(&1, index + 1))
     end
   end
 
@@ -347,7 +349,7 @@ defmodule RoseTree.Zipper do
     else
       zipper
       |> ascend()
-      |> descend(index - 1)
+      |> Zipper.lift(&descend(&1, index - 1))
     end
   end
 

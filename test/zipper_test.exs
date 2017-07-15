@@ -10,7 +10,7 @@ defmodule ZipperTest do
       |> Zipper.from_tree()
       |> Zipper.descend(0)
       |> Zipper.lift(&Zipper.ascend/1)
-      |> Zipper.to_tree() == tree
+      |> Zipper.lift(&Zipper.to_tree/1) == tree
     end
   end
 end
