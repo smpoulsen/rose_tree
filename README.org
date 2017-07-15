@@ -54,7 +54,7 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
 + =RoseTree.Zipper.lift/2=
 
 ** Protocols
-=RoseTree= implements the =[[https://hexdocs.pm/elixir/Enumerable.html][Enumerable]]= protocol, so all applicable =[[https://hexdocs.pm/elixir/Enum.html][Enum]]= and =[[https://hexdocs.pm/elixir/Stream.html][Stream]]= functions are usable with a =RoseTree=.
+=RoseTree= implements the [[https://hexdocs.pm/elixir/Enumerable.html][Enumerable]] protocol, so all applicable [[https://hexdocs.pm/elixir/Enum.html][Enum]] and [[https://hexdocs.pm/elixir/Stream.html][Stream]] functions are usable with a =RoseTree=.
 
 ** Installation
   Add =rose_tree= to your list of dependencies in =mix.exs=:

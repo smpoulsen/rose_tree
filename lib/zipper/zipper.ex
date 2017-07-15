@@ -5,15 +5,15 @@ defmodule RoseTree.Zipper do
   a given node and maintaining enough data to reconstruct the overall
   tree from any given node.
 
-  Because most of the functions in RoseTree.Zipper can attempt to access data that
+  Because most of the functions in `RoseTree.Zipper` can attempt to access data that
   may not exist, e.g. an out-of-bounds index in a node's array of chlidren, the majority
   of the functions return values with tagged tuples to let the user explicitly handle
-  success and error cases: {:ok, {%RoseTree{}, []}} | {:error, {:rose_tree, error_message}}
+  success and error cases: `{:ok, {%RoseTree{}, []}} | {:error, {:rose_tree, error_message}}`
 
   To make working with these values easier, the function `lift/2` takes one of these tagged
-  tuple, either zipper | error, values and a function. If the first argument is an error,
-  the error is passed through; if it is an {:ok, zipper} tuple, the function is applied to
-  the zipper. In this way, you can call successive tree manipulation functions with ease.
+  tuple (`either zipper | error`) values and a function. If the first argument is an error,
+  the error is passed through; if it is an `{:ok, zipper}` tuple, the function is applied to
+  the zipper. This lets you easily chain successive calls to tree manipulation functions.
   """
 
   @type breadcrumb :: %{node: any(), index: integer(), other_children: [any()]}
@@ -57,10 +57,10 @@ defmodule RoseTree.Zipper do
       %RoseTree{node: :b, children: []}
   """
   @spec to_tree(Zipper.t) :: RoseTree.t
-  def to_tree({%RoseTree{} = tree, _crumbs}), do: tree
+  def to_tree({%RoseTree{} = tree, _crumbs} = _zipper), do: tree
 
   @doc """
-  Descend into a node in such a way that you can reconstruct the tree from the bottom up.
+  Move the zipper's focus to the child at the index.
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
@@ -82,8 +82,8 @@ defmodule RoseTree.Zipper do
       }]}}
   """
   @spec descend(Zipper.t, integer()) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
-  def descend({%RoseTree{children: []}, _breadcrumbs}, _index), do: {:error, {:rose_tree, :no_children}}
-  def descend({%RoseTree{} = tree, breadcrumbs}, index) when is_list(breadcrumbs) and is_integer(index) do
+  def descend({%RoseTree{children: []}, _breadcrumbs} = _zipper, _index), do: {:error, {:rose_tree, :no_children}}
+  def descend({%RoseTree{} = tree, breadcrumbs} = _zipper, index) when is_list(breadcrumbs) and is_integer(index) do
     with {elem, %RoseTree{node: node, children: updated_children}} <- RoseTree.pop_child_at(tree, index) do
       new_breadcrumb = %{node: node, index: index, other_children: updated_children}
       {:ok, {elem, [new_breadcrumb | breadcrumbs]}}
@@ -91,7 +91,7 @@ defmodule RoseTree.Zipper do
   end
 
   @doc """
-  Reconstruct a node from the bottom up.
+  Move up the tree to the parent of the node that the zipper is currently focused on.
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
@@ -113,8 +113,8 @@ defmodule RoseTree.Zipper do
       }
   """
   @spec ascend(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_parent}}
-  def ascend({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_parent}}
-  def ascend({%RoseTree{} = tree, [%{index: idx, node: value, other_children: others} | crumbs]}) do
+  def ascend({%RoseTree{}, []} = _zipper), do: {:error, {:rose_tree, :no_parent}}
+  def ascend({%RoseTree{} = tree, [%{index: idx, node: value, other_children: others} | crumbs]} = _zipper) do
     siblings = List.insert_at(others, idx, tree)
     {:ok, {%RoseTree{node: value, children: siblings}, crumbs}}
   end
@@ -143,7 +143,7 @@ defmodule RoseTree.Zipper do
     }]}
   """
   @spec modify(Zipper.t, (any() -> any())) :: Zipper.t
-  def modify({%RoseTree{node: node} = tree, crumbs}, f) do
+  def modify({%RoseTree{node: node} = tree, crumbs} = _zipper, f) do
     {%RoseTree{tree | node: f.(node)}, crumbs}
   end
 
@@ -170,7 +170,7 @@ defmodule RoseTree.Zipper do
       ]}
   """
   @spec prune(Zipper.t) :: Zipper.t
-  def prune({%RoseTree{}, [%{node: value, other_children: siblings} | crumbs]}) do
+  def prune({%RoseTree{}, [%{node: value, other_children: siblings} | crumbs]} = _zipper) do
       {%RoseTree{node: value, children: siblings}, crumbs}
   end
 
@@ -198,7 +198,7 @@ defmodule RoseTree.Zipper do
     ]}
   """
   @spec to_root(Zipper.t) :: RoseTree.t
-  def to_root({tree, []}), do: tree
+  def to_root({tree, []} = _zipper), do: tree
   def to_root({_tree, _crumbs} = zipper), do: lift(ascend(zipper), &to_root/1)
 
 
@@ -423,6 +423,6 @@ defmodule RoseTree.Zipper do
       {:error, {:rose_tree, :bad_path}}
   """
   @spec lift(either_zipper, (any() -> any())) :: either_zipper
-  def lift({:ok, zipper}, f), do: f.(zipper)
-  def lift({:error, _} = error, _f), do: error
+  def lift({:ok, zipper} = _either_zipper_error, f), do: f.(zipper)
+  def lift({:error, _} = either_zipper_error, _f), do: either_zipper_error
 end

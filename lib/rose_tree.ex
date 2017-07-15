@@ -147,8 +147,8 @@ defmodule RoseTree do
   end
 
   @doc """
-  Map a function over a tree, preserving the trees structure (compare
-  with Enum.map for rose trees, which maps over a list of node values).
+  Map a function over a tree, preserving the tree's structure (compare
+  with `Enum.map` for rose trees, which maps over a list of node values).
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(1),
@@ -179,12 +179,12 @@ defmodule RoseTree do
   Merge two nodes that have the same value.
 
   If the sets of children in the two nodes do not share any members, the
-  children of tree a are prepended to tree b's children.
+  children of `tree_a` are prepended to `tree_b`'s children.
 
   If there are children with the same node value present in both trees,
-  the children are themselves merged with the child in tree a's children updated
-  with the children of tree b's child that matched prepended to the unique children
-  from tree b.
+  the children are themselves merged with the child in `tree_a`'s children (updated
+  with the merge of the children of `tree_b`'s child) that matched prepended to
+  the unique children from `tree_b`.
 
   ## Examples
       iex> {:ok, world_wide} = RoseTree.new(:world, :wide)
@@ -273,9 +273,9 @@ defmodule RoseTree do
       ...> RoseTree.pop_child_at(tree, 1)
       {%RoseTree{node: :c, children: [
         %RoseTree{node: :d, children: []},
-        %RoseTree{node: :z, children: []}]},
-        %RoseTree{node: :a, children: [
-          %RoseTree{node: :b, children: []},
+        %RoseTree{node: :z, children: []}
+      ]}, %RoseTree{node: :a, children: [
+        %RoseTree{node: :b, children: []}
         ]}
       }
   """
@@ -338,8 +338,8 @@ defmodule RoseTree do
   """
   @spec paths(RoseTree.t) :: [any()]
   def paths(%RoseTree{} = tree), do: paths(tree, [])
-  def paths(%RoseTree{node: node, children: []}, acc), do: Enum.reverse([node | acc])
-  def paths(%RoseTree{node: node, children: children}, acc) do
+  defp paths(%RoseTree{node: node, children: []}, acc), do: Enum.reverse([node | acc])
+  defp paths(%RoseTree{node: node, children: children}, acc) do
     for child <- children, do: paths(child, [node | acc])
   end
 
@@ -384,13 +384,13 @@ defmodule RoseTree do
       {:error, {:rose_tree, :bad_path}}
   """
   @spec elem_at(RoseTree.t, list(integer())) :: {:ok, any()} | {:error, tuple()}
-  def elem_at(%RoseTree{node: node}, []), do: {:ok, node}
-  def elem_at(%RoseTree{children: children}, [h | t]) when h <= length(children) do
+  def elem_at(%RoseTree{node: node} = _tree, [] = _index_path), do: {:ok, node}
+  def elem_at(%RoseTree{children: children} = _tree, [h | t] = _index_path) when h <= length(children) do
     children
     |> Enum.at(h)
     |> elem_at(t)
   end
-  def elem_at(_, _), do: {:error, {:rose_tree, :bad_path}}
+  def elem_at(_tree, _index_path), do: {:error, {:rose_tree, :bad_path}}
 
   @doc """
   Replace the value of every node that matches a given value.
