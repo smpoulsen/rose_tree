@@ -295,7 +295,8 @@ defmodule RoseTree.Zipper do
   @spec next_sibling(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_siblings}} | {:error, {:rose_tree, :no_next_sibling}}
   def next_sibling({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_siblings}}
   def next_sibling({%RoseTree{}, [%{index: index, other_children: children} | _t]} = zipper) do
-    if (index + 1) > length(children) do
+    at_last_child = (index + 1) > length(children)
+    if at_last_child do
       {:error, {:rose_tree, :no_next_sibling}}
     else
       zipper
@@ -340,7 +341,8 @@ defmodule RoseTree.Zipper do
   @spec previous_sibling(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_siblings}} | {:error, {:rose_tree, :no_previous_sibling}}
   def previous_sibling({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_siblings}}
   def previous_sibling({%RoseTree{}, [%{index: index} | _t]} = zipper) do
-    if (index - 1) < 0 do
+    at_first_child = (index - 1) < 0
+    if at_first_child do
       {:error, {:rose_tree, :no_previous_sibling}}
     else
       zipper
