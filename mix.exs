@@ -18,7 +18,8 @@ defmodule RoseTree.Mixfile do
 
   def description() do
     """
-    An implementation of a Rose tree
+    A rose tree is a recursive n-ary tree. rose_tree implements the data structure
+    and provides raw and zipper-based traversal and manipulation.
     """
   end
 
