@@ -16,7 +16,7 @@ defmodule RoseTree.Zipper do
   the zipper. This lets you easily chain successive calls to tree manipulation functions.
   """
 
-  @type breadcrumb :: %{node: any(), index: integer(), other_children: [any()]}
+  @type breadcrumb :: %{parent: any(), left_siblings: [any()], right_siblings: [any()]}
   @type t :: {RoseTree.t, [breadcrumb]}
   @type either_zipper :: {:ok, Zipper.t} | {:error, tuple()}
 
@@ -71,9 +71,9 @@ defmodule RoseTree.Zipper do
       ...> end
       ...> Zipper.descend({tree, []}, 0)
       {:ok, {%RoseTree{node: :b, children: []}, [%{
-        node: :a,
-        index: 0,
-        other_children: [
+        parent: :a,
+        left_siblings: [],
+        right_siblings: [
           %RoseTree{node: :c, children: [
             %RoseTree{node: :d, children: []},
             %RoseTree{node: :z, children: []}
@@ -82,12 +82,19 @@ defmodule RoseTree.Zipper do
       }]}}
   """
   @spec descend(Zipper.t, integer()) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
+  def descend(zipper, index \\ 0)
   def descend({%RoseTree{children: []}, _breadcrumbs} = _zipper, _index), do: {:error, {:rose_tree, :no_children}}
-  def descend({%RoseTree{} = tree, breadcrumbs} = _zipper, index) when is_list(breadcrumbs) and is_integer(index) do
-    with {elem, %RoseTree{node: node, children: updated_children}} <- RoseTree.pop_child_at(tree, index) do
-      new_breadcrumb = %{node: node, index: index, other_children: updated_children}
-      {:ok, {elem, [new_breadcrumb | breadcrumbs]}}
+  def descend({%RoseTree{node: node, children: [h | t]}, breadcrumbs} = zipper, index) when is_list(breadcrumbs) and is_integer(index) do
+    case index do
+      0 ->
+        {:ok, {h, [%{parent: node, left_siblings: [], right_siblings: t} | breadcrumbs]}}
+      _ ->
+        lift(descend(zipper, index - 1), &next_sibling/1)
     end
+    #with {elem, %RoseTree{node: node, children: updated_children}} <- RoseTree.pop_child_at(tree, index) do
+      #new_breadcrumb = %{node: node, index: index, other_children: updated_children}
+      #{:ok, {elem, [new_breadcrumb | breadcrumbs]}}
+    #end
   end
 
   @doc """
@@ -114,9 +121,9 @@ defmodule RoseTree.Zipper do
   """
   @spec ascend(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_parent}}
   def ascend({%RoseTree{}, []} = _zipper), do: {:error, {:rose_tree, :no_parent}}
-  def ascend({%RoseTree{} = tree, [%{index: idx, node: value, other_children: others} | crumbs]} = _zipper) do
-    siblings = List.insert_at(others, idx, tree)
-    {:ok, {%RoseTree{node: value, children: siblings}, crumbs}}
+  def ascend({%RoseTree{} = tree, [%{parent: parent_value, left_siblings: l, right_siblings: r} | crumbs]} = _zipper) do
+    children = l ++ [tree | r]
+    {:ok, {%RoseTree{node: parent_value, children: children}, crumbs}}
   end
 
   @doc """
@@ -132,9 +139,9 @@ defmodule RoseTree.Zipper do
     ...> {:ok, descended} = Zipper.descend({tree, []}, 0)
     ...> Zipper.modify(descended, fn(x) -> x * 5 end)
     {%RoseTree{node: 5, children: []}, [%{
-      node: 0,
-      index: 0,
-      other_children: [
+      parent: 0,
+      left_siblings: [],
+      right_siblings: [
         %RoseTree{node: 10, children: [
           %RoseTree{node: 11, children: []},
           %RoseTree{node: 12, children: []}
@@ -170,8 +177,8 @@ defmodule RoseTree.Zipper do
       ]}
   """
   @spec prune(Zipper.t) :: Zipper.t
-  def prune({%RoseTree{}, [%{node: value, other_children: siblings} | crumbs]} = _zipper) do
-      {%RoseTree{node: value, children: siblings}, crumbs}
+  def prune({%RoseTree{}, [%{parent: value, left_siblings: l, right_siblings: r} | crumbs]} = _zipper) do
+      {%RoseTree{node: value, children: l ++ r}, crumbs}
   end
 
   @doc """
@@ -219,9 +226,9 @@ defmodule RoseTree.Zipper do
   ...> |> Zipper.from_tree()
   ...> |> Zipper.first_child()
   {:ok, {%RoseTree{node: :b, children: []}, [%{
-    node: :a,
-    index: 0,
-    other_children: [
+    parent: :a,
+    left_siblings: [],
+    right_siblings: [
       %RoseTree{node: :c, children: [
         %RoseTree{node: :d, children: []},
         %RoseTree{node: :z, children: []}
@@ -254,7 +261,7 @@ defmodule RoseTree.Zipper do
       %RoseTree{node: :d, children: []},
       %RoseTree{node: :z, children: []}
     ]},
-    [%{node: :a, index: 1, other_children: [%RoseTree{node: :b, children: []}]}]
+    [%{parent: :a, left_siblings: [%RoseTree{node: :b, children: []}], right_siblings: []}]
   }}
   """
   @spec last_child(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
@@ -272,13 +279,13 @@ defmodule RoseTree.Zipper do
       ...> end
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
-      ...> |> Zipper.lift(&Zipper.descend(&1, 0))
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.descend(&1))
       ...> |> Zipper.lift(&Zipper.next_sibling/1)
       {:ok, {
         %RoseTree{children: [], node: :z}, [
-          %{index: 1, node: :c, other_children: [%RoseTree{children: [], node: :d}]},
-          %{index: 0, node: :a, other_children: []}
+          %{parent: :c, left_siblings: [%RoseTree{children: [], node: :d}], right_siblings: []},
+          %{parent: :a, left_siblings: [], right_siblings: []}
         ]
       }}
 
@@ -289,21 +296,17 @@ defmodule RoseTree.Zipper do
       ...> end
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
+      ...> |> Zipper.descend()
       ...> |> Zipper.lift(&Zipper.descend(&1, 1))
       ...> |> Zipper.lift(&Zipper.next_sibling/1)
       {:error, {:rose_tree, :no_next_sibling}}
   """
   @spec next_sibling(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_siblings}} | {:error, {:rose_tree, :no_next_sibling}}
   def next_sibling({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_siblings}}
-  def next_sibling({%RoseTree{}, [%{index: index, other_children: children} | _t]} = zipper) do
-    at_last_child = (index + 1) > length(children)
-    if at_last_child do
-      {:error, {:rose_tree, :no_next_sibling}}
-    else
-      zipper
-      |> ascend()
-      |> lift(&descend(&1, index + 1))
+  def next_sibling({%RoseTree{} = tree, [%{} = h | t] = _crumbs} = _zipper) do
+    case h.right_siblings do
+      [] -> {:error, {:rose_tree, :no_next_sibling}}
+      [r | rs] -> {:ok, {r, [%{h | right_siblings: rs, left_siblings: [tree | h.left_siblings]} | t]}}
     end
   end
 
@@ -323,8 +326,8 @@ defmodule RoseTree.Zipper do
       ...> |> Zipper.lift(&Zipper.previous_sibling/1)
       {:ok, {
         %RoseTree{children: [], node: :d}, [
-          %{index: 0, node: :c, other_children: [%RoseTree{children: [], node: :z}]},
-          %{index: 0, node: :a, other_children: []}
+          %{parent: :c, left_siblings: [], right_siblings: [%RoseTree{children: [], node: :z}]},
+          %{parent: :a, left_siblings: [], right_siblings: []}
         ]
       }}
 
@@ -342,14 +345,10 @@ defmodule RoseTree.Zipper do
   """
   @spec previous_sibling(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_siblings}} | {:error, {:rose_tree, :no_previous_sibling}}
   def previous_sibling({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_siblings}}
-  def previous_sibling({%RoseTree{}, [%{index: index} | _t]} = zipper) do
-    at_first_child = (index - 1) < 0
-    if at_first_child do
-      {:error, {:rose_tree, :no_previous_sibling}}
-    else
-      zipper
-      |> ascend()
-      |> Zipper.lift(&descend(&1, index - 1))
+  def previous_sibling({%RoseTree{} = tree, [%{} = h | t] = _crumbs} = _zipper) do
+    case h.left_siblings do
+      [] -> {:error, {:rose_tree, :no_previous_sibling}}
+      [l | ls] -> {:ok, {l, [%{h | left_siblings: ls, right_siblings: [tree | h.right_siblings]} | t]}}
     end
   end
 
@@ -368,8 +367,8 @@ defmodule RoseTree.Zipper do
       ...> |> Zipper.lift(&Zipper.find_child(&1, fn(child) -> child.node > 10 end))
       {:ok, {
         %RoseTree{children: [], node: 15}, [
-          %{index: 0, node: 1, other_children: [%RoseTree{children: [], node: 5}]},
-          %{index: 0, node: :a, other_children: []}
+          %{parent: 1, left_siblings: [], right_siblings: [%RoseTree{children: [], node: 5}]},
+          %{parent: :a, left_siblings: [], right_siblings: []}
         ]
       }}
 
