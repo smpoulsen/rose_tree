@@ -10,34 +10,52 @@ of which are themselves rose trees.
 Ex:
 [[img/rose_tree_diagram.png]]
 
+Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-reference.html][hex]].
+
 ** Functions
-*** Tree creation
-+ =new/1=
-+ =new/2=
-+ =from_map/1=
-*** Node insertion/removal/validation
-+ =add_child/2=
-+ =is_child?/2=
-+ =elem_at/2=
-+ =child_values/1=
-*** Node manipulation
-+ =map/2=
-+ =pop_child/1=
-+ =pop_child_at/2=
-+ =merge_nodes/2=
-+ =update_node/3=
-+ =update_children/3=
-*** Traversal
-+ =paths/1=
-+ =to_list/1=
-*** Zipper traversal/manipulation
-+ =descend/2=
-+ =ascend/1=
-+ =modify/2=
-+ =prune/1=
-+ =to_root/1=
+*** RoseTree
+**** Tree creation
++ =RoseTree.new/1=
++ =RoseTree.new/2=
++ =RoseTree.from_map/1=
+**** Node insertion/removal/validation
++ =RoseTree.add_child/2=
++ =RoseTree.add_child/2=
++ =RoseTree.pop_child/1=
++ =RoseTree.pop_child_at/2=
++ =RoseTree.elem_at/2=
+**** Node manipulation
++ =RoseTree.map/2=
++ =RoseTree.update_node/3=
++ =RoseTree.update_children/3=
++ =RoseTree.merge_nodes/2=
+**** Traversal
++ =RoseTree.to_list/1=
++ =RoseTree.paths/1=
++ =RoseTree.child_values/1=
+**** Predicates
++ =RoseTree.is_child?/2=
+*** RoseTree.Zipper
+**** Creation/Extraction
++ =RoseTree.Zipper.to_tree/1=
++ =RoseTree.Zipper.from_tree/1=
+**** Traversal
++ =RoseTree.Zipper.descend/2=
++ =RoseTree.Zipper.ascend/1=
++ =RoseTree.Zipper.to_root/1=
++ =RoseTree.Zipper.next_sibling/1=
++ =RoseTree.Zipper.previous_sibling/1=
++ =RoseTree.Zipper.last_child/1=
++ =RoseTree.Zipper.first_child/1=
++ =RoseTree.Zipper.find_child/2=
+*** Modification
++ =RoseTree.Zipper.prune/1=
++ =RoseTree.Zipper.modify/2=
++ =RoseTree.Zipper.lift/2=
+
 ** Protocols
-=RoseTree= implements the =Enumerable= protocol, so all =Enum= functions are usable with a =RoseTree=.
+=RoseTree= implements the [[https://hexdocs.pm/elixir/Enumerable.html][Enumerable]] protocol, so all applicable [[https://hexdocs.pm/elixir/Enum.html][Enum]] and [[https://hexdocs.pm/elixir/Stream.html][Stream]] functions are usable with a =RoseTree=.
+
 ** Installation
   Add =rose_tree= to your list of dependencies in =mix.exs=:
     #+BEGIN_SRC elixir
