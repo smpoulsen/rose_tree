@@ -22,10 +22,10 @@ defmodule Generators do
             {self, tree}
           end, fn
             (self, %RoseTree{node: node, children: children}) ->
-              new_node = shrink(elements(@node_values), node)
-            new_children = if length(children) == 0, do: [], else: [hd(children)]
-            tree = %RoseTree{node: new_node, children: new_children}
-            {self, tree}
+              new_node = :x
+              new_children = if Enum.empty?(children), do: [], else: tl(children)
+              tree = %RoseTree{node: new_node, children: new_children}
+              {self, tree}
           end)
       end
 
