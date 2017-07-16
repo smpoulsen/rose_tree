@@ -184,6 +184,8 @@ defmodule RoseTree.Zipper do
   @doc """
   Ascend from any node to the root of the tree.
 
+  If the focus is already on the root, it does not move.
+
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
       ...>      {:ok, d} <- RoseTree.new(:d),
@@ -236,6 +238,8 @@ defmodule RoseTree.Zipper do
 
   @doc """
   Descend from the current focus to the left-most child tree.
+
+  If the focus is already on a leaf, it does not move.
 
   ## Examples
       iex> {:ok, tree} = with {:ok, b} <- RoseTree.new(:b),
@@ -291,8 +295,8 @@ defmodule RoseTree.Zipper do
         }
       ]}
   """
-  @spec to_leaf(Zipper.t) :: RoseTree.t
-  def to_leaf({%RoseTree{children: []}, _crumbs} = zipper), do: zipper
+  @spec to_leaf(Zipper.t) :: Zipper.t
+  def to_leaf({%RoseTree{children: []} = tree, _crumbs} = zipper), do: zipper
   def to_leaf({%RoseTree{children: _children}, _crumbs} = zipper) do
     zipper
     |> descend()
@@ -515,4 +519,179 @@ defmodule RoseTree.Zipper do
   @spec lift(either_zipper, (any() -> any())) :: either_zipper
   def lift({:ok, zipper} = _either_zipper_error, f), do: f.(zipper)
   def lift({:error, _} = either_zipper_error, _f), do: either_zipper_error
+
+  ## Predicates
+  @doc """
+  Test whether the current focus is the root of the tree.
+
+  ## Examples
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.root?()
+      true
+
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.root?/1)
+      false
+  """
+  @spec root?(Zipper.t) :: boolean()
+  def root?({%RoseTree{}, []} = _zipper), do: true
+  def root?({%RoseTree{}, _crumbs} = _zipper), do: false
+
+  @doc """
+  Test whether the current focus is a leaf of the tree.
+
+  ## Examples
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.leaf?/1)
+      true
+
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.leaf?()
+      false
+  """
+  @spec leaf?(Zipper.t) :: boolean()
+  def leaf?({%RoseTree{children: []}, _crumbs} = _zipper), do: true
+  def leaf?({%RoseTree{}, _crumbs} = _zipper), do: false
+
+  @doc """
+  Test whether the current focus is a the first (left-most) node among its siblings.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, x} <- RoseTree.new(:x),
+      ...>      {:ok, y} <- RoseTree.new(:y),
+      ...>      {:ok, z} <- RoseTree.new(:z) do
+      ...>   RoseTree.new(:a, [x, y, z])
+      ...> end
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.first?/1)
+      true
+
+      iex> {:ok, tree} = with {:ok, x} <- RoseTree.new(:x),
+      ...>      {:ok, y} <- RoseTree.new(:y),
+      ...>      {:ok, z} <- RoseTree.new(:z) do
+      ...>   RoseTree.new(:a, [x, y, z])
+      ...> end
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.next_sibling/1)
+      ...> |> Zipper.lift(&Zipper.next_sibling/1)
+      ...> |> Zipper.lift(&Zipper.first?/1)
+      false
+  """
+  @spec first?(Zipper.t) :: boolean()
+  def first?({%RoseTree{}, [%{left_siblings: []} | _t]} = _zipper), do: true
+  def first?({%RoseTree{}, _crumbs} = _zipper), do: false
+
+  @doc """
+  Test whether the current focus is a the last (right-most) node among its siblings.
+
+  ## Examples
+      iex> {:ok, tree} = with {:ok, x} <- RoseTree.new(:x),
+      ...>      {:ok, y} <- RoseTree.new(:y),
+      ...>      {:ok, z} <- RoseTree.new(:z) do
+      ...>   RoseTree.new(:a, [x, y, z])
+      ...> end
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.next_sibling/1)
+      ...> |> Zipper.lift(&Zipper.next_sibling/1)
+      ...> |> Zipper.lift(&Zipper.last?/1)
+      true
+
+      iex> {:ok, tree} = with {:ok, x} <- RoseTree.new(:x),
+      ...>      {:ok, y} <- RoseTree.new(:y),
+      ...>      {:ok, z} <- RoseTree.new(:z) do
+      ...>   RoseTree.new(:a, [x, y, z])
+      ...> end
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.last?/1)
+      false
+  """
+  @spec last?(Zipper.t) :: boolean()
+  def last?({%RoseTree{}, [%{right_siblings: []} | _t]} = _zipper), do: true
+  def last?({%RoseTree{}, _crumbs} = _zipper), do: false
+
+  @doc """
+  Test whether the current focus is a the only child of its parent.
+
+  ## Examples
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.only_child?/1)
+      true
+
+      iex> {:ok, tree} = with {:ok, x} <- RoseTree.new(:x),
+      ...>      {:ok, y} <- RoseTree.new(:y),
+      ...>      {:ok, z} <- RoseTree.new(:z) do
+      ...>   RoseTree.new(:a, [x, y, z])
+      ...> end
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.only_child?/1)
+      false
+  """
+  @spec only_child?(Zipper.t) :: boolean()
+  def only_child?({%RoseTree{}, [%{right_siblings: [], left_siblings: []} | _t]} = _zipper), do: true
+  def only_child?({%RoseTree{}, _crumbs} = _zipper), do: false
+
+
+  @doc """
+  Test whether the current focus has a parent node.
+
+  ## Examples
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.has_parent?/1)
+      true
+
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.has_parent?()
+      false
+  """
+  @spec has_parent?(Zipper.t) :: boolean()
+  def has_parent?({%RoseTree{}, _crumbs} = zipper), do: !root?(zipper)
+
+  @doc """
+  Test whether the current focus has any child nodes.
+
+  ## Examples
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.has_children?()
+      true
+
+      iex> {:ok, tree} = RoseTree.new(:a, :b)
+      ...> tree
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.descend()
+      ...> |> Zipper.lift(&Zipper.has_children?/1)
+      false
+  """
+  @spec has_children?(Zipper.t) :: boolean()
+  def has_children?({%RoseTree{children: []}, _crumbs} = _zipper), do: false
+  def has_children?({%RoseTree{}, _crumbs} = _zipper), do: true
 end

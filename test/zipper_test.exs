@@ -26,4 +26,26 @@ defmodule ZipperTest do
       end
     end
   end
+
+  property "result of to_root/1 is root?/1 and !has_parent/1" do
+    for_all {tree} in {rose_tree(0)} do
+      zipper = Zipper.from_tree(tree)
+      implies Zipper.has_children?(zipper) == true do
+        root = zipper
+        |> Zipper.descend()
+        |> Zipper.lift(&Zipper.to_root/1)
+        |> Zipper.from_tree()
+        Zipper.root?(root) == true && Zipper.has_parent?(root) == false
+      end
+    end
+  end
+
+  property "result of to_leaf/1 has no children" do
+    for_all {tree} in {rose_tree(1)} do
+      tree
+      |> Zipper.from_tree()
+      |> Zipper.to_leaf()
+      |> Zipper.has_children?() == false
+    end
+  end
 end
