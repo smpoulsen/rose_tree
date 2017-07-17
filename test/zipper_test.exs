@@ -32,7 +32,7 @@ defmodule ZipperTest do
       zipper = Zipper.from_tree(tree)
       implies Zipper.has_children?(zipper) == true do
         root = zipper
-        |> Zipper.descend()
+        |> Zipper.first_child()
         |> Zipper.lift(&Zipper.to_root/1)
         |> Zipper.from_tree()
         Zipper.root?(root) == true && Zipper.has_parent?(root) == false
