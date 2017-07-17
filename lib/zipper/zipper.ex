@@ -50,7 +50,7 @@ defmodule RoseTree.Zipper do
       ...> {:ok, z} = RoseTree.new(:z)
       ...> {:ok, c} = RoseTree.new(:c, [d, z])
       ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> Zipper.descend({tree, []}, 0)
+      ...> Zipper.nth_child({tree, []}, 0)
       ...> |> Zipper.lift(&Zipper.to_tree(&1))
       %RoseTree{node: :b, children: []}
   """
@@ -58,7 +58,7 @@ defmodule RoseTree.Zipper do
   def to_tree({%RoseTree{} = tree, _crumbs} = _zipper), do: tree
 
   @doc """
-  Move the zipper's focus to the child at the index.
+  Move the zipper's focus to the child at the given index.
 
   ## Examples
       iex> {:ok, b} = RoseTree.new(:b)
@@ -66,7 +66,7 @@ defmodule RoseTree.Zipper do
       ...> {:ok, z} = RoseTree.new(:z)
       ...> {:ok, c} = RoseTree.new(:c, [d, z])
       ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> Zipper.descend({tree, []}, 0)
+      ...> Zipper.nth_child({tree, []}, 0)
       {:ok, {%RoseTree{node: :b, children: []}, [%{
         parent: :a,
         left_siblings: [],
@@ -78,14 +78,14 @@ defmodule RoseTree.Zipper do
         ]
       }]}}
   """
-  @spec descend(Zipper.t, integer()) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
-  def descend({%RoseTree{children: []}, _breadcrumbs} = _zipper, _index), do: {:error, {:rose_tree, :no_children}}
-  def descend({%RoseTree{node: node, children: [h | t]}, breadcrumbs} = zipper, index) when is_list(breadcrumbs) and is_integer(index) do
+  @spec nth_child(Zipper.t, integer()) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
+  def nth_child({%RoseTree{children: []}, _breadcrumbs} = _zipper, _index), do: {:error, {:rose_tree, :no_children}}
+  def nth_child({%RoseTree{node: node, children: [h | t]}, breadcrumbs} = zipper, index) when is_list(breadcrumbs) and is_integer(index) do
     case index do
       0 ->
         {:ok, {h, [%{parent: node, left_siblings: [], right_siblings: t} | breadcrumbs]}}
       _ ->
-        lift(descend(zipper, index - 1), &next_sibling/1)
+        lift(nth_child(zipper, index - 1), &next_sibling/1)
     end
   end
 
@@ -98,8 +98,8 @@ defmodule RoseTree.Zipper do
       ...> {:ok, z} = RoseTree.new(:z)
       ...> {:ok, c} = RoseTree.new(:c, [d, z])
       ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> {:ok, descended} = Zipper.descend({tree, []}, 0)
-      ...> Zipper.ascend(descended)
+      ...> {:ok, nth_childed} = Zipper.nth_child({tree, []}, 0)
+      ...> Zipper.ascend(nth_childed)
       {:ok,
         {%RoseTree{node: :a, children: [
           %RoseTree{node: :b, children: []},
@@ -126,8 +126,8 @@ defmodule RoseTree.Zipper do
       ...> {:ok, z} = RoseTree.new(12)
       ...> {:ok, c} = RoseTree.new(10, [d, z])
       ...> {:ok, tree} = RoseTree.new(0, [b, c])
-      ...> {:ok, descended} = Zipper.descend({tree, []}, 0)
-      ...> Zipper.modify(descended, fn(x) -> x * 5 end)
+      ...> {:ok, nth_childed} = Zipper.nth_child({tree, []}, 0)
+      ...> Zipper.modify(nth_childed, fn(x) -> x * 5 end)
       {%RoseTree{node: 5, children: []}, [%{
         parent: 0,
         left_siblings: [],
@@ -155,7 +155,7 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [b, c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
+      ...> |> Zipper.nth_child(0)
       ...> |> Zipper.lift(&Zipper.prune(&1))
       ...> |> Zipper.to_tree()
       %RoseTree{node: :a, children: [
@@ -183,8 +183,8 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [b, c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(1)
-      ...> |> Zipper.lift(&Zipper.descend(&1, 0))
+      ...> |> Zipper.nth_child(1)
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 0))
       ...> |> Zipper.lift(&Zipper.to_root(&1))
       %RoseTree{node: :a, children: [
         %RoseTree{node: :b, children: []},
@@ -205,7 +205,7 @@ defmodule RoseTree.Zipper do
       ...> tree
       ...> |> Zipper.from_tree()
       ...> |> Zipper.first_child()
-      ...> |> Zipper.lift(&Zipper.descend(&1, 2))
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 2))
       ...> |> Zipper.lift(&Zipper.to_root/1)
       %RoseTree{node: :a, children: [
         %RoseTree{node: :b, children: [
@@ -224,7 +224,7 @@ defmodule RoseTree.Zipper do
   def to_root({_tree, _crumbs} = zipper), do: lift(ascend(zipper), &to_root/1)
 
   @doc """
-  Descend from the current focus to the left-most child tree.
+  Nth_Child from the current focus to the left-most child tree.
 
   If the focus is already on a leaf, it does not move.
 
@@ -317,7 +317,7 @@ defmodule RoseTree.Zipper do
   """
   @spec first_child(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
   def first_child({%RoseTree{children: []}, _crumbs}), do: {:error, {:rose_tree, :bad_path}}
-  def first_child({%RoseTree{}, _crumbs} = zipper), do: descend(zipper, 0)
+  def first_child({%RoseTree{}, _crumbs} = zipper), do: nth_child(zipper, 0)
 
   @doc """
   Move the zipper's focus to the node's last child.
@@ -344,7 +344,7 @@ defmodule RoseTree.Zipper do
   """
   @spec last_child(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_children}}
   def last_child({%RoseTree{children: []}, _crumbs}), do: {:error, {:rose_tree, :bad_path}}
-  def last_child({%RoseTree{} = tree, _crumbs} = zipper), do: descend(zipper, Enum.count(tree.children) - 1)
+  def last_child({%RoseTree{} = tree, _crumbs} = zipper), do: nth_child(zipper, Enum.count(tree.children) - 1)
 
   @doc """
   Move the zipper's focus to the next sibling of the currently focused node.
@@ -373,7 +373,7 @@ defmodule RoseTree.Zipper do
       ...> tree
       ...> |> Zipper.from_tree()
       ...> |> Zipper.first_child()
-      ...> |> Zipper.lift(&Zipper.descend(&1, 1))
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 1))
       ...> |> Zipper.lift(&Zipper.next_sibling/1)
       {:error, {:rose_tree, :no_next_sibling}}
   """
@@ -396,8 +396,8 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
-      ...> |> Zipper.lift(&Zipper.descend(&1, 1))
+      ...> |> Zipper.nth_child(0)
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 1))
       ...> |> Zipper.lift(&Zipper.previous_sibling/1)
       {:ok, {
         %RoseTree{children: [], node: :d}, [
@@ -412,8 +412,8 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
-      ...> |> Zipper.lift(&Zipper.descend(&1, 0))
+      ...> |> Zipper.nth_child(0)
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 0))
       ...> |> Zipper.lift(&Zipper.previous_sibling/1)
       {:error, {:rose_tree, :no_previous_sibling}}
   """
@@ -436,7 +436,7 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
+      ...> |> Zipper.nth_child(0)
       ...> |> Zipper.lift(&Zipper.find_child(&1, fn(child) -> child.node > 10 end))
       {:ok, {
         %RoseTree{children: [], node: 15}, [
@@ -451,7 +451,7 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(0)
+      ...> |> Zipper.nth_child(0)
       ...> |> Zipper.lift(&Zipper.find_child(&1, fn(child) -> length(child.children) > 5 end))
       {:error, {:rose_tree, :no_child_match}}
   """
@@ -461,7 +461,7 @@ defmodule RoseTree.Zipper do
     if matching_index == nil do
       {:error, {:rose_tree, :no_child_match}}
     else
-      descend(zipper, matching_index)
+      nth_child(zipper, matching_index)
     end
   end
 
@@ -480,16 +480,16 @@ defmodule RoseTree.Zipper do
       ...> {:ok, tree} = RoseTree.new(:a, [b, c])
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(1)
-      ...> |> Zipper.lift(&Zipper.descend(&1, 0))
+      ...> |> Zipper.nth_child(1)
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 0))
       ...> |> Zipper.lift(&Zipper.to_tree(&1))
       %RoseTree{node: :d, children: []}
 
       ...> tree
       ...> |> Zipper.from_tree()
-      ...> |> Zipper.descend(1)
-      ...> |> Zipper.lift(&Zipper.descend(&1, 0))
-      ...> |> Zipper.lift(&Zipper.descend(&1, 1))
+      ...> |> Zipper.nth_child(1)
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 0))
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 1))
       {:error, {:rose_tree, :bad_path}}
   """
   @spec lift(either_zipper, (any() -> any())) :: either_zipper
