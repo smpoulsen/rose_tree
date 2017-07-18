@@ -12,39 +12,42 @@ defmodule RoseTree do
   @type t :: %RoseTree{node: any(), children: [%RoseTree{}]}
 
   @doc """
+  Create a new, empty rose tree.
+
+  ## Example
+      iex> RoseTree.new()
+      %RoseTree{node: :empty, children: []}
+  """
+  @spec new() :: RoseTree.t
+  def new(), do: %RoseTree{node: :empty, children: []}
+
+  @doc """
   Initialize a new rose tree with a node value and empty children.
 
   ## Examples
       iex> RoseTree.new(:a)
-      {:ok, %RoseTree{node: :a, children: []}}
+      %RoseTree{node: :a, children: []}
   """
-  @spec new(any()) :: {:ok, RoseTree.t}
-  def new(value), do: {:ok, %RoseTree{node: value, children: []}}
+  @spec new(any()) :: RoseTree.t
+  def new(value), do: %RoseTree{node: value, children: []}
 
   @doc """
   Initialize a new rose tree with a node value and children.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, c} = RoseTree.new(:c)
-      ...> RoseTree.new(:a, [b, c])
-      {:ok, %RoseTree{node: :a, children: [
+      iex> b = RoseTree.new(:b)
+      ...> RoseTree.new(:a, [b, :c])
+      %RoseTree{node: :a, children: [
         %RoseTree{node: :b, children: []},
         %RoseTree{node: :c, children: []}
-      ]}}
+      ]}
   """
-  @spec new(any(), any()) :: {:ok, RoseTree.t} | {:error, tuple()}
-  def new(value, children) when is_list(children) do
-    if Enum.all?(children, &(is_rose_tree?(&1))) do
-      {:ok, %RoseTree{node: value, children: children}}
-    else
-      {:error, {:rose_tree, :bad_children}}
-    end
-  end
-  def new(value, %RoseTree{} = child), do: {:ok, %RoseTree{node: value, children: [child]}}
-  def new(value, child) do
-    {:ok, child_tree} = new(child)
-    {:ok, %RoseTree{node: value, children: [child_tree]}}
+  @spec new(any(), any()) :: RoseTree.t
+  def new(value, children) do
+    children_trees = children
+    |> List.wrap()
+    |> Enum.map(fn(child) -> if is_rose_tree?(child), do: child, else: new(child) end)
+    %RoseTree{node: value, children: children_trees}
   end
 
   @doc """
@@ -56,17 +59,17 @@ defmodule RoseTree do
   then the new child's children are merged with the existing child's children.
 
   ## Examples
-      iex> {:ok, hello} = RoseTree.new(:hello)
-      ...> {:ok, world} = RoseTree.new(:world)
+      iex> hello = RoseTree.new(:hello)
+      ...> world = RoseTree.new(:world)
       ...> RoseTree.add_child(hello, world)
       %RoseTree{node: :hello, children: [
         %RoseTree{node: :world, children: []}
       ]}
 
-      iex> {:ok, hello} = RoseTree.new(:hello)
-      ...> {:ok, world_wide} = RoseTree.new(:world, :wide)
-      ...> {:ok, world_champ} = RoseTree.new(:world, :champ)
-      ...> {:ok, dave} = RoseTree.new(:dave)
+      iex> hello = RoseTree.new(:hello)
+      ...> world_wide = RoseTree.new(:world, :wide)
+      ...> world_champ = RoseTree.new(:world, :champ)
+      ...> dave = RoseTree.new(:dave)
       ...> hello
       ...> |> RoseTree.add_child(world_wide)
       ...> |> RoseTree.add_child(world_champ)
@@ -97,15 +100,12 @@ defmodule RoseTree do
   Retrieve a list of the values of a node's immediate children.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
+      iex> c = RoseTree.new(:c, [:d, :z])
+      ...> tree = RoseTree.new(:a, [:b, c])
       ...> RoseTree.child_values(tree)
       [:b, :c]
 
-      iex> {:ok, tree} = RoseTree.new(:hello)
+      iex> tree = RoseTree.new(:hello)
       ...> RoseTree.child_values(tree)
       []
   """
@@ -122,14 +122,12 @@ defmodule RoseTree do
   matches a node value in the tree of interest.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
+      iex> b = RoseTree.new(:b)
+      ...> c = RoseTree.new(:c, [:d, :z])
+      ...> tree = RoseTree.new(:a, [b, c])
       ...> RoseTree.is_child?(tree, b)
       true
-      ...> {:ok, x} = RoseTree.new(:x)
+      ...> x = RoseTree.new(:x)
       ...> RoseTree.is_child?(tree, x)
       false
   """
@@ -145,12 +143,8 @@ defmodule RoseTree do
   with `Enum.map` for rose trees, which maps over a list of node values).
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(1)
-      ...> {:ok, d} = RoseTree.new(11)
-      ...> {:ok, z} = RoseTree.new(12)
-      ...> {:ok, c} = RoseTree.new(10, [d, z])
-      ...> {:ok, tree} = RoseTree.new(0, [b, c])
-      ...> RoseTree.map(tree, fn (value) -> value * value end)
+      iex> RoseTree.new(0, [1, RoseTree.new(10, [11, 12])])
+      ...> |> RoseTree.map(fn (value) -> value * value end)
       %RoseTree{node: 0, children: [
         %RoseTree{node: 1, children: []},
         %RoseTree{node: 100, children: [
@@ -180,8 +174,8 @@ defmodule RoseTree do
   the unique children from `tree_b`.
 
   ## Examples
-      iex> {:ok, world_wide} = RoseTree.new(:world, :wide)
-      ...> {:ok, world_champ} = RoseTree.new(:world, :champ)
+      iex> world_wide = RoseTree.new(:world, :wide)
+      ...> world_champ = RoseTree.new(:world, :champ)
       ...> RoseTree.merge_nodes(world_champ, world_wide)
       %RoseTree{
         children: [
@@ -228,12 +222,8 @@ defmodule RoseTree do
   Returns a tuple containing the child that was removed and the modified tree.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> RoseTree.pop_child(tree)
+      iex> RoseTree.new(:a, [:b, RoseTree.new(:c, [:d, :z])])
+      ...> |> RoseTree.pop_child()
       {%RoseTree{node: :b, children: []}, %RoseTree{
         node: :a, children: [
           %RoseTree{node: :c, children: [
@@ -243,8 +233,8 @@ defmodule RoseTree do
         ]
       }}
 
-      iex> {:ok, hello} = RoseTree.new(:hello)
-      ...> RoseTree.pop_child(hello)
+      iex> RoseTree.new(:hello)
+      ...> |> RoseTree.pop_child()
       {nil, %RoseTree{node: :hello, children: []}}
   """
   @spec pop_child(RoseTree.t) :: {RoseTree.t, RoseTree.t} | {nil, RoseTree.t}
@@ -256,12 +246,8 @@ defmodule RoseTree do
   Returns a tuple containing the child that was removed and the modified tree.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> RoseTree.pop_child_at(tree, 1)
+      iex> RoseTree.new(:a, [:b, RoseTree.new(:c, [:d, :z])])
+      ...> |> RoseTree.pop_child_at(1)
       {%RoseTree{node: :c, children: [
         %RoseTree{node: :d, children: []},
         %RoseTree{node: :z, children: []}
@@ -297,18 +283,14 @@ defmodule RoseTree do
   end
 
   defp from_map_helper(children) when is_list(children) do
-    for child <- children do
-      {:ok, tree} = new(child)
-      tree
-    end
+    for child <- children, do: new(child)
   end
   defp from_map_helper(%{} = map) do
     if length(Map.keys(map)) > 1 do
       {:error, {:rose_tree, :one_node_root}}
     else
       res = for {k, v} <- map do
-        {:ok, tree} = new(k, from_map_helper(v))
-        tree
+        new(k, from_map_helper(v))
       end
       hd(res)
     end
@@ -318,12 +300,8 @@ defmodule RoseTree do
   List all of the possible paths through a tree.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> RoseTree.paths(tree)
+      iex> RoseTree.new(:a, [:b, RoseTree.new(:c, [:d, :z])])
+      ...> |> RoseTree.paths()
       [[:a, :b], [[:a, :c, :d], [:a, :c, :z]]]
   """
   @spec paths(RoseTree.t) :: [any()]
@@ -337,12 +315,8 @@ defmodule RoseTree do
   Extract the node values of a rose tree into a list.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
-      ...> RoseTree.to_list(tree)
+      iex> RoseTree.new(:a, [:b, RoseTree.new(:c, [:d, :z])])
+      ...> |> RoseTree.to_list()
       [:a, :b, :c, :d, :z]
   """
   @spec to_list(RoseTree.t) :: [any()]
@@ -359,11 +333,7 @@ defmodule RoseTree do
   Fetch a node's value by traversing a path of indicies through nodes and their children.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, d} = RoseTree.new(:d)
-      ...> {:ok, z} = RoseTree.new(:z)
-      ...> {:ok, c} = RoseTree.new(:c, [d, z])
-      ...> {:ok, tree} = RoseTree.new(:a, [b, c])
+      iex> tree = RoseTree.new(:a, [:b, RoseTree.new(:c, [:d, :z])])
       ...> RoseTree.elem_at(tree, [])
       {:ok, :a}
       ...> RoseTree.elem_at(tree, [1, 0])
@@ -388,9 +358,8 @@ defmodule RoseTree do
   all be updated.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, tree} = RoseTree.new(:a, [b])
-      ...> RoseTree.update_node(tree, :a, :hello)
+      iex> RoseTree.new(:a, [:b])
+      ...> |> RoseTree.update_node(:a, :hello)
       %RoseTree{node: :hello, children: [%RoseTree{node: :b, children: []}]}
   """
   @spec update_node(RoseTree.t, any(), any()) :: RoseTree.t
@@ -411,10 +380,8 @@ defmodule RoseTree do
   all be updated.
 
   ## Examples
-      iex> {:ok, b} = RoseTree.new(:b)
-      ...> {:ok, tree} = RoseTree.new(:a, [b])
-      ...> {:ok, c} = RoseTree.new(:c)
-      ...> RoseTree.update_children(tree, :a, [c])
+      iex> RoseTree.new(:a, [:b])
+      ...> |> RoseTree.update_children(:a, [RoseTree.new(:c)])
       %RoseTree{node: :a, children: [%RoseTree{node: :c, children: []}]}
   """
   @spec update_children(RoseTree.t, any(), any()) :: RoseTree.t
