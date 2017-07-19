@@ -625,4 +625,118 @@ defmodule RoseTree.Zipper do
     {focus, [%{h | right_siblings: [tree | siblings]} | t]}
     |> next_sibling()
   end
+
+  @doc """
+  Insert a tree as the first child of the current node. Focus moves to the
+  newly inserted tree.
+
+  ## Example
+      iex> RoseTree.new(:a, [RoseTree.new(:b, [:y, :z]), RoseTree.new(:c, [:d, :e])])
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.insert_first_child(RoseTree.new(:x))
+      {:ok, {%RoseTree{node: :x, children: []}, [
+        %{parent: :a,
+          left_siblings: [],
+          right_siblings: [
+            %RoseTree{node: :b, children: [
+              %RoseTree{node: :y, children: []},
+              %RoseTree{node: :z, children: []}
+            ]},
+            %RoseTree{node: :c, children: [
+              %RoseTree{node: :d, children: []},
+              %RoseTree{node: :e, children: []}
+            ]}
+          ]
+        }
+      ]}}
+  """
+  @spec insert_first_child(Zipper.t, RoseTree.t) :: {:ok, Zipper.t}
+  def insert_first_child({%RoseTree{children: children} = focus, crumbs} = zipper, %RoseTree{} = tree) do
+    {%{focus | children: [tree | children]}, crumbs}
+    |> first_child()
+  end
+
+  @doc """
+  Insert a tree as the last child of the current node. Focus moves to the
+  newly inserted tree.
+
+  ## Example
+      iex> t = RoseTree.new(:a, [RoseTree.new(:b, [:y, :z]), RoseTree.new(:c, [:d, :e])])
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.insert_last_child(RoseTree.new(:x))
+      {:ok, {%RoseTree{node: :x, children: []}, [
+        %{parent: :a,
+          left_siblings: [
+            %RoseTree{node: :c, children: [
+              %RoseTree{node: :d, children: []},
+              %RoseTree{node: :e, children: []}
+            ]},
+            %RoseTree{node: :b, children: [
+              %RoseTree{node: :y, children: []},
+              %RoseTree{node: :z, children: []}
+            ]}
+          ],
+          right_siblings: []
+        }
+      ]}}
+      iex> Zipper.lift(t, &Zipper.to_root/1)
+      ...> |> Zipper.to_tree()
+      %RoseTree{node: :a,
+        children: [
+          %RoseTree{node: :b, children: [
+            %RoseTree{node: :y, children: []},
+            %RoseTree{node: :z, children: []}
+          ]},
+          %RoseTree{node: :c, children: [
+            %RoseTree{node: :d, children: []},
+            %RoseTree{node: :e, children: []}
+          ]},
+          %RoseTree{node: :x, children: []}
+        ]
+      }
+  """
+  @spec insert_last_child(Zipper.t, RoseTree.t) :: {:ok, Zipper.t}
+  def insert_last_child({%RoseTree{children: children} = focus, crumbs} = zipper, %RoseTree{} = tree) do
+    {%{focus | children: children ++ [tree]}, crumbs}
+    |> last_child()
+  end
+
+  @doc """
+  Insert a tree as the nth child of the current node. Focus moves to the
+  newly inserted tree.
+
+  ## Example
+      iex> RoseTree.new(:a, [RoseTree.new(:b, [:y, :z]), RoseTree.new(:c, [:d, :e])])
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.insert_nth_child(1, RoseTree.new(:x))
+      {:ok, {%RoseTree{node: :x, children: []}, [
+        %{parent: :a,
+          left_siblings: [
+            %RoseTree{node: :b, children: [
+              %RoseTree{node: :y, children: []},
+              %RoseTree{node: :z, children: []}
+            ]}
+          ],
+          right_siblings: [
+            %RoseTree{node: :c, children: [
+              %RoseTree{node: :d, children: []},
+              %RoseTree{node: :e, children: []}
+            ]},
+          ]
+        }
+      ]}}
+
+      iex> RoseTree.new(:a, [RoseTree.new(:b, [:y, :z]), RoseTree.new(:c, [:d, :e])])
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.insert_nth_child(4, RoseTree.new(:x))
+      {:error, {:rose_tree, :bad_insertion_index}}
+  """
+  @spec insert_nth_child(Zipper.t, pos_integer(), RoseTree.t) :: either_zipper
+  def insert_nth_child({%RoseTree{children: children}, _crumbs} = _zipper, idx, _tree) when idx > length(children) do
+    {:error, {:rose_tree, :bad_insertion_index}}
+  end
+  def insert_nth_child({%RoseTree{children: children} = focus, crumbs} = zipper, idx, %RoseTree{} = tree) do
+    {%{focus | children: List.insert_at(children, idx, tree)}, crumbs}
+    |> nth_child(idx)
+  end
 end
