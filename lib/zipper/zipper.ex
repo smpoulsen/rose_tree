@@ -14,6 +14,9 @@ defmodule RoseTree.Zipper do
   tuple (`either zipper | error`) values and a function. If the first argument is an error,
   the error is passed through; if it is an `{:ok, zipper}` tuple, the function is applied to
   the zipper. This lets you easily chain successive calls to tree manipulation functions.
+
+  Adapted from [Huet (1997)](https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf);
+  additional functionality inspired by [Data.Tree.Zipper](https://hackage.haskell.org/package/rosezipper-0.1/docs/Data-Tree-Zipper.html).
   """
 
   @type breadcrumb :: %{parent: any(), left_siblings: [any()], right_siblings: [any()]}
@@ -313,7 +316,7 @@ defmodule RoseTree.Zipper do
       {:error, {:rose_tree, :no_next_sibling}}
   """
   @spec next_sibling(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_siblings}} | {:error, {:rose_tree, :no_next_sibling}}
-  def next_sibling({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_siblings}}
+  def next_sibling({%RoseTree{}, []} = _zipper), do: {:error, {:rose_tree, :no_siblings}}
   def next_sibling({%RoseTree{} = tree, [%{} = h | t] = _crumbs} = _zipper) do
     case h.right_siblings do
       [] -> {:error, {:rose_tree, :no_next_sibling}}
@@ -345,7 +348,7 @@ defmodule RoseTree.Zipper do
       {:error, {:rose_tree, :no_previous_sibling}}
   """
   @spec previous_sibling(Zipper.t) :: {:ok, Zipper.t} | {:error, {:rose_tree, :no_siblings}} | {:error, {:rose_tree, :no_previous_sibling}}
-  def previous_sibling({%RoseTree{}, []}), do: {:error, {:rose_tree, :no_siblings}}
+  def previous_sibling({%RoseTree{}, []} = _zipper), do: {:error, {:rose_tree, :no_siblings}}
   def previous_sibling({%RoseTree{} = tree, [%{} = h | t] = _crumbs} = _zipper) do
     case h.left_siblings do
       [] -> {:error, {:rose_tree, :no_previous_sibling}}
@@ -584,7 +587,7 @@ defmodule RoseTree.Zipper do
   """
   @spec insert_left(Zipper.t, RoseTree.t) :: either_zipper
   def insert_left({%RoseTree{}, []} = _zipper, _tree), do: {:error, {:rose_tree, :root_cannot_have_siblings}}
-  def insert_left({%RoseTree{} = focus, [%{left_siblings: siblings} = h | t]} = zipper, %RoseTree{} = tree) do
+  def insert_left({%RoseTree{} = focus, [%{left_siblings: siblings} = h | t]} = _zipper, %RoseTree{} = tree) do
     {focus, [%{h | left_siblings: [tree | siblings]} | t]}
     |> previous_sibling()
   end
@@ -621,7 +624,7 @@ defmodule RoseTree.Zipper do
   """
   @spec insert_right(Zipper.t, RoseTree.t) :: either_zipper
   def insert_right({%RoseTree{}, []} = _zipper, _tree), do: {:error, {:rose_tree, :root_cannot_have_siblings}}
-  def insert_right({%RoseTree{} = focus, [%{right_siblings: siblings} = h | t]} = zipper, %RoseTree{} = tree) do
+  def insert_right({%RoseTree{} = focus, [%{right_siblings: siblings} = h | t]} = _zipper, %RoseTree{} = tree) do
     {focus, [%{h | right_siblings: [tree | siblings]} | t]}
     |> next_sibling()
   end
@@ -651,7 +654,7 @@ defmodule RoseTree.Zipper do
       ]}}
   """
   @spec insert_first_child(Zipper.t, RoseTree.t) :: {:ok, Zipper.t}
-  def insert_first_child({%RoseTree{children: children} = focus, crumbs} = zipper, %RoseTree{} = tree) do
+  def insert_first_child({%RoseTree{children: children} = focus, crumbs} = _zipper, %RoseTree{} = tree) do
     {%{focus | children: [tree | children]}, crumbs}
     |> first_child()
   end
@@ -696,7 +699,7 @@ defmodule RoseTree.Zipper do
       }
   """
   @spec insert_last_child(Zipper.t, RoseTree.t) :: {:ok, Zipper.t}
-  def insert_last_child({%RoseTree{children: children} = focus, crumbs} = zipper, %RoseTree{} = tree) do
+  def insert_last_child({%RoseTree{children: children} = focus, crumbs} = _zipper, %RoseTree{} = tree) do
     {%{focus | children: children ++ [tree]}, crumbs}
     |> last_child()
   end
@@ -732,11 +735,11 @@ defmodule RoseTree.Zipper do
       {:error, {:rose_tree, :bad_insertion_index}}
   """
   @spec insert_nth_child(Zipper.t, pos_integer(), RoseTree.t) :: either_zipper
-  def insert_nth_child({%RoseTree{children: children}, _crumbs} = _zipper, idx, _tree) when idx > length(children) do
+  def insert_nth_child({%RoseTree{children: children}, _crumbs} = _zipper, index, _tree) when index > length(children) do
     {:error, {:rose_tree, :bad_insertion_index}}
   end
-  def insert_nth_child({%RoseTree{children: children} = focus, crumbs} = zipper, idx, %RoseTree{} = tree) do
-    {%{focus | children: List.insert_at(children, idx, tree)}, crumbs}
-    |> nth_child(idx)
+  def insert_nth_child({%RoseTree{children: children} = focus, crumbs} = _zipper, index, %RoseTree{} = tree) do
+    {%{focus | children: List.insert_at(children, index, tree)}, crumbs}
+    |> nth_child(index)
   end
 end
