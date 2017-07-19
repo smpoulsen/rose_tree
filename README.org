@@ -58,6 +58,14 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
 + =RoseTree.Zipper.insert_first_child/2=
 + =RoseTree.Zipper.insert_last_child/2=
 + =RoseTree.Zipper.insert_nth_child/3=
+*** Predicates
++ =RoseTree.Zipper.root?/1=
++ =RoseTree.Zipper.leaf?/1=
++ =RoseTree.Zipper.first?/1=
++ =RoseTree.Zipper.last?/1=
++ =RoseTree.Zipper.only_child?/1=
++ =RoseTree.Zipper.has_parent?/1=
++ =RoseTree.Zipper.has_children?/1=
 
 ** Protocols
 =RoseTree= implements the [[https://hexdocs.pm/elixir/Enumerable.html][Enumerable]] protocol, so all applicable [[https://hexdocs.pm/elixir/Enum.html][Enum]] and [[https://hexdocs.pm/elixir/Stream.html][Stream]] functions are usable with a =RoseTree=.
