@@ -15,6 +15,7 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
 ** Functions
 *** RoseTree
 **** Tree creation
++ =RoseTree.new/0=
 + =RoseTree.new/1=
 + =RoseTree.new/2=
 + =RoseTree.from_map/1=
@@ -40,7 +41,7 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
 + =RoseTree.Zipper.to_tree/1=
 + =RoseTree.Zipper.from_tree/1=
 **** Traversal
-+ =RoseTree.Zipper.descend/2=
++ =RoseTree.Zipper.nth_child/2=
 + =RoseTree.Zipper.ascend/1=
 + =RoseTree.Zipper.to_root/1=
 + =RoseTree.Zipper.next_sibling/1=
@@ -52,6 +53,11 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
 + =RoseTree.Zipper.prune/1=
 + =RoseTree.Zipper.modify/2=
 + =RoseTree.Zipper.lift/2=
++ =RoseTree.Zipper.insert_left/2=
++ =RoseTree.Zipper.insert_right/2=
++ =RoseTree.Zipper.insert_first_child/2=
++ =RoseTree.Zipper.insert_last_child/2=
++ =RoseTree.Zipper.insert_nth_child/3=
 
 ** Protocols
 =RoseTree= implements the [[https://hexdocs.pm/elixir/Enumerable.html][Enumerable]] protocol, so all applicable [[https://hexdocs.pm/elixir/Enum.html][Enum]] and [[https://hexdocs.pm/elixir/Stream.html][Stream]] functions are usable with a =RoseTree=.
