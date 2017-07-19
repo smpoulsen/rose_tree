@@ -550,4 +550,79 @@ defmodule RoseTree.Zipper do
   @spec has_children?(Zipper.t) :: boolean()
   def has_children?({%RoseTree{children: []}, _crumbs} = _zipper), do: false
   def has_children?({%RoseTree{}, _crumbs} = _zipper), do: true
+
+  ## Tree modification
+  @doc """
+  Insert a tree to the left of the current focus. Focus moves to the
+  newly inserted tree.
+
+  ## Example
+      iex> RoseTree.new(:a, [RoseTree.new(:b, [:y, :z]), RoseTree.new(:c, [:d, :e])])
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.first_child()
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 1))
+      ...> |> Zipper.lift(&Zipper.insert_left(&1, RoseTree.new(:x)))
+      {:ok, {%RoseTree{node: :x, children: []}, [
+        %{parent: :b,
+        left_siblings: [
+          %RoseTree{node: :y, children: []},
+        ],
+        right_siblings: [
+          %RoseTree{node: :z, children: []},
+        ]
+        },
+        %{parent: :a,
+          left_siblings: [],
+          right_siblings: [
+            %RoseTree{node: :c, children: [
+            %RoseTree{node: :d, children: []},
+            %RoseTree{node: :e, children: []}
+            ]}
+          ]
+        }
+      ]}}
+  """
+  @spec insert_left(Zipper.t, RoseTree.t) :: either_zipper
+  def insert_left({%RoseTree{}, []} = _zipper, _tree), do: {:error, {:rose_tree, :root_cannot_have_siblings}}
+  def insert_left({%RoseTree{} = focus, [%{left_siblings: siblings} = h | t]} = zipper, %RoseTree{} = tree) do
+    {focus, [%{h | left_siblings: [tree | siblings]} | t]}
+    |> previous_sibling()
+  end
+
+  @doc """
+  Insert a tree to the right of the current focus. Focus moves to the
+  newly inserted tree.
+
+  ## Example
+      iex> RoseTree.new(:a, [RoseTree.new(:b, [:y, :z]), RoseTree.new(:c, [:d, :e])])
+      ...> |> Zipper.from_tree()
+      ...> |> Zipper.first_child()
+      ...> |> Zipper.lift(&Zipper.nth_child(&1, 1))
+      ...> |> Zipper.lift(&Zipper.insert_right(&1, RoseTree.new(:x)))
+      {:ok, {%RoseTree{node: :x, children: []}, [
+        %{parent: :b,
+        left_siblings: [
+          %RoseTree{node: :z, children: []},
+          %RoseTree{node: :y, children: []},
+        ],
+        right_siblings: [
+        ]
+        },
+        %{parent: :a,
+          left_siblings: [],
+          right_siblings: [
+            %RoseTree{node: :c, children: [
+            %RoseTree{node: :d, children: []},
+            %RoseTree{node: :e, children: []}
+            ]}
+          ]
+        }
+      ]}}
+  """
+  @spec insert_right(Zipper.t, RoseTree.t) :: either_zipper
+  def insert_right({%RoseTree{}, []} = _zipper, _tree), do: {:error, {:rose_tree, :root_cannot_have_siblings}}
+  def insert_right({%RoseTree{} = focus, [%{right_siblings: siblings} = h | t]} = zipper, %RoseTree{} = tree) do
+    {focus, [%{h | right_siblings: [tree | siblings]} | t]}
+    |> next_sibling()
+  end
 end
