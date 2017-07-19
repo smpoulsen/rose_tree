@@ -66,6 +66,6 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
   Add =rose_tree= to your list of dependencies in =mix.exs=:
     #+BEGIN_SRC elixir
       def deps do
-        [{:rose_tree, "~> 0.1.0"}]
+        [{:rose_tree, "~> 0.2.0"}]
       end
     #+END_SRC
