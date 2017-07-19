@@ -22,7 +22,8 @@ defmodule ZipperTest do
         zipper
         |> Zipper.nth_child(1)
         |> Zipper.lift(&Zipper.nth_child(&1, 1))
-        |> Zipper.lift(&Zipper.to_root/1) == tree
+        |> Zipper.lift(&Zipper.to_root/1)
+        |> Zipper.to_tree() == tree
       end
     end
   end
@@ -34,7 +35,6 @@ defmodule ZipperTest do
         root = zipper
         |> Zipper.first_child()
         |> Zipper.lift(&Zipper.to_root/1)
-        |> Zipper.from_tree()
         Zipper.root?(root) == true && Zipper.has_parent?(root) == false
       end
     end

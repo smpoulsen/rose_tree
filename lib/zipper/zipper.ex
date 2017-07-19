@@ -160,20 +160,20 @@ defmodule RoseTree.Zipper do
       ...> |> Zipper.nth_child(1)
       ...> |> Zipper.lift(&Zipper.nth_child(&1, 0))
       ...> |> Zipper.lift(&Zipper.to_root(&1))
-      %RoseTree{node: :a, children: [
+      {%RoseTree{node: :a, children: [
         %RoseTree{node: :b, children: []},
         %RoseTree{node: :c, children: [
           %RoseTree{node: :d, children: []},
           %RoseTree{node: :z, children: []}
         ]}
-      ]}
+      ]}, []}
 
       iex> RoseTree.new(:a, [RoseTree.new(:b, [:x, :y, :z]), RoseTree.new(:c, [:d, :e])])
       ...> |> Zipper.from_tree()
       ...> |> Zipper.first_child()
       ...> |> Zipper.lift(&Zipper.nth_child(&1, 2))
       ...> |> Zipper.lift(&Zipper.to_root/1)
-      %RoseTree{node: :a, children: [
+      {%RoseTree{node: :a, children: [
         %RoseTree{node: :b, children: [
           %RoseTree{node: :x, children: []},
           %RoseTree{node: :y, children: []},
@@ -183,10 +183,10 @@ defmodule RoseTree.Zipper do
           %RoseTree{node: :d, children: []},
           %RoseTree{node: :e, children: []},
         ]},
-      ]}
+      ]}, []}
   """
-  @spec to_root(Zipper.t) :: RoseTree.t
-  def to_root({tree, []} = _zipper), do: tree
+  @spec to_root(Zipper.t) :: Zipper.t
+  def to_root({%RoseTree{}, []} = zipper), do: zipper
   def to_root({_tree, _crumbs} = zipper), do: lift(ascend(zipper), &to_root/1)
 
   @doc """
@@ -575,8 +575,8 @@ defmodule RoseTree.Zipper do
           left_siblings: [],
           right_siblings: [
             %RoseTree{node: :c, children: [
-            %RoseTree{node: :d, children: []},
-            %RoseTree{node: :e, children: []}
+              %RoseTree{node: :d, children: []},
+              %RoseTree{node: :e, children: []}
             ]}
           ]
         }
@@ -612,8 +612,8 @@ defmodule RoseTree.Zipper do
           left_siblings: [],
           right_siblings: [
             %RoseTree{node: :c, children: [
-            %RoseTree{node: :d, children: []},
-            %RoseTree{node: :e, children: []}
+              %RoseTree{node: :d, children: []},
+              %RoseTree{node: :e, children: []}
             ]}
           ]
         }
