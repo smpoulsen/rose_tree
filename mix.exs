@@ -3,8 +3,8 @@ defmodule RoseTree.Mixfile do
 
   def project do
     [app: :rose_tree,
-     version: "0.2.0",
-     elixir: "~> 1.4",
+     version: "0.3.0",
+     elixir: "~> 1.10",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      description: description(),
@@ -25,11 +25,11 @@ defmodule RoseTree.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, ">= 0.0.0", only: :dev},
-      {:credo, "~> 0.8.2", only: [:dev, :test]},
-      {:dialyxir, "~> 0.5.0", only: [:dev, :test]},
       {:excheck, "~> 0.5.3", only: :test},
-      {:triq, github: "triqng/triq", only: :test},
+      {:triq, "~> 1.3", only: :test},
+      {:ex_doc, ">= 0.25.0", only: :dev},
+      {:credo, "~> 1.5.0", only: [:dev, :test]},
+      {:dialyxir, "~> 1.1.0", only: [:dev, :test]},
     ]
   end
 
@@ -37,9 +37,9 @@ defmodule RoseTree.Mixfile do
     [
       name: :rose_tree,
       licenses: ["BSD2"],
-      maintainers: ["Travis Poulsen"],
+      maintainers: ["Sylvie Poulsen"],
       links: %{
-        "GitHub" => "https://github.com/tpoulsen/rose_tree",
+        "GitHub" => "https://github.com/smpoulsen/rose_tree",
       }
     ]
   end

@@ -1,6 +1,6 @@
 * RoseTree
-[[https://circleci.com/gh/tpoulsen/rose_tree][https://circleci.com/gh/tpoulsen/rose_tree.svg?style=svg]]
 [[https://img.shields.io/hexpm/v/rose_tree.svg]]
+[[https://github.com/smpoulsen/rose_tree/actions/workflows/test.yml][https://github.com/smpoulsen/rose_tree/actions/workflows/test.yml/badge.svg]]
 
 /An n-ary tree by any other name.../
 
@@ -74,6 +74,6 @@ Up-to-date documentation can be found on [[https://hexdocs.pm/rose_tree/api-refe
   Add =rose_tree= to your list of dependencies in =mix.exs=:
     #+BEGIN_SRC elixir
       def deps do
-        [{:rose_tree, "~> 0.2.0"}]
+        [{:rose_tree, "~> 0.3.0"}]
       end
     #+END_SRC
