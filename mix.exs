@@ -37,9 +37,9 @@ defmodule RoseTree.Mixfile do
     [
       name: :rose_tree,
       licenses: ["BSD2"],
-      maintainers: ["Travis Poulsen"],
+      maintainers: ["Sylvie Poulsen"],
       links: %{
-        "GitHub" => "https://github.com/tpoulsen/rose_tree",
+        "GitHub" => "https://github.com/smpoulsen/rose_tree",
       }
     ]
   end
